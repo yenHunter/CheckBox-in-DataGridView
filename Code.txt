@@ -1,0 +1,142 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+
+namespace GridView_Checkbox
+{
+    public partial class Form1 : Form
+    {
+        SqlConnection sqlCom = new SqlConnection("Data Source=SOFTWARE1;Initial Catalog=CrudDB;User ID=sa;Password=sa*1209");
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            sqlCom.Open();
+            string query = "SELECT * FROM Class";
+            SqlDataAdapter sda = new SqlDataAdapter(query, sqlCom);
+            DataTable dt = new System.Data.DataTable();
+            sda.Fill(dt);
+            foreach (DataRow item in dt.Rows)
+            {
+                comboBoxClass.Items.Insert(0, item["Class_Name"].ToString());
+            }
+            sqlCom.Close();
+
+            sqlCom.Open();
+            if (textBoxName.Text == null && comboBoxClass.Text == null)
+            {
+                MessageBox.Show("Value is Empty");
+            }
+            string query1 = "SELECT Student.StudentId, Student.Student_Name, Class.ClassId FROM Student JOIN Class ON Student.Class_Id = Class.ClassId";
+            SqlDataAdapter sda1 = new SqlDataAdapter(query1, sqlCom);
+            DataTable dt1 = new DataTable();
+            sda1.Fill(dt1);
+            dataGridView_Form_1.DataSource = dt1;
+            sqlCom.Close();
+            textBoxComboBox.Visible = false;
+        }
+
+        private void buttonClose_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void buttonNew_Click(object sender, EventArgs e)
+        {
+            textBoxName.Text = "";
+            comboBoxClass.Text = "";
+            string query = "SELECT MAX (StudentId) FROM Student";
+            SqlCommand sqlc = new SqlCommand(query, sqlCom);
+            sqlc.CommandType = CommandType.Text;
+            sqlc.Connection.Open();
+            SqlDataReader sdr = sqlc.ExecuteReader();
+            if(sdr.HasRows)
+            {
+                while(sdr.Read())
+                {
+                    textBoxID.Text = sdr[0].ToString();
+                }
+            }
+            int maxValue = System.Convert.ToInt32(textBoxID.Text);
+            textBoxID.Text = (maxValue + 1).ToString();
+            sqlc.Connection.Close();
+        }
+
+        private void buttonSave_Click(object sender, EventArgs e)
+        {
+            SqlCommand sqlc = new SqlCommand("SELECT ClassId FROM Class WHERE Class_Name = '" + comboBoxClass.Text.Trim() + "'", sqlCom);
+            sqlc.CommandType = CommandType.Text;
+            sqlc.Connection.Open();
+            SqlDataReader sdr = sqlc.ExecuteReader();
+            if (sdr.HasRows)
+            {
+                while (sdr.Read())
+                {
+                    textBoxComboBox.Text = sdr[0].ToString();
+                }
+            }
+            sqlc.Connection.Close();
+            if (textBoxName.Text == null || comboBoxClass.Text == null)
+            {
+                MessageBox.Show("Value is Empty");
+            }
+            else
+            {
+                sqlCom.Open();
+                string query = "INSERT into Student (Student_Name, Class_Id) VALUES ('" + textBoxName.Text.Trim() + "','" + textBoxComboBox.Text.Trim() + "')";
+                SqlDataAdapter sda = new SqlDataAdapter(query, sqlCom);
+                DataTable dt = new DataTable();
+                sda.Fill(dt);
+                sda.Update(dt);
+                dataGridView_Form_1.DataSource = dt;
+                sqlCom.Close();
+            }
+            
+            SqlDataAdapter sda1 = new SqlDataAdapter("SELECT StudentId, Student_Name, Class_Id FROM Student JOIN Class ON Student.Class_Id=Class.ClassId", sqlCom);
+            DataTable dt1 = new DataTable();
+            sda1.Fill(dt1);
+            dataGridView_Form_1.DataSource = dt1;
+            sqlCom.Close();
+        }
+
+        private void buttonShow_Click(object sender, EventArgs e)
+        {
+            sqlCom.Open();
+            SqlDataAdapter sda = new SqlDataAdapter("SELECT StudentId, Student_Name, Class_Id FROM Student JOIN Class ON Student.Class_Id=Class.ClassId", sqlCom);
+            DataTable dt = new System.Data.DataTable();
+            sda.Fill(dt);
+            dataGridView_Form_1.DataSource = dt;
+            sqlCom.Close();
+        }
+
+        private void buttonDelete_Click(object sender, EventArgs e)
+        {
+            foreach (DataGridViewRow item in dataGridView_Form_1.Rows)
+            {
+                if (item.Cells[0].Selected)
+                {
+                    sqlCom.Open();
+                    SqlCommand sqlc = new SqlCommand("DELETE FROM Student WHERE StudentId = '" + item.Cells[1].Value + "'", sqlCom);
+                    sqlc.ExecuteNonQuery();
+                    sqlCom.Close();
+                }
+            }
+            sqlCom.Open();
+            SqlDataAdapter sda = new SqlDataAdapter("SELECT StudentId, Student_Name, Class_Id FROM Student JOIN Class ON Student.Class_Id=Class.ClassId", sqlCom);
+            DataTable dt = new System.Data.DataTable();
+            sda.Fill(dt);
+            dataGridView_Form_1.DataSource = dt;
+            sqlCom.Close();
+        }
+    }
+}
